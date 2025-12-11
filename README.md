@@ -70,11 +70,6 @@ We welcome contributions from integrators and enterprise partners. Please see `C
 - Branching and pull request workflow
 - Security reporting and responsible disclosure
 
-## Support
-For enterprise support, professional services, or partnership inquiries, contact:
-- Email: support@factoryguard.example.com (replace with your corporate contact)
-- Sales: sales@factoryguard.example.com
-
 ## License
 This project is distributed under the [MIT License](LICENSE) — modify if needed to reflect your corporate license.
 
