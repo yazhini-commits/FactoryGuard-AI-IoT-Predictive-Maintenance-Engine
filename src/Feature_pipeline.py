@@ -57,7 +57,7 @@ def run_feature_pipeline():
     print(" Loading datasets...")
     cleaned_df, rolling_df, lag_df = load_datasets()
 
-    print("🔗 Merging features...")
+    print(" Merging features...")
     final_features = merge_features(cleaned_df, rolling_df, lag_df)
 
     print(" Serializing features...")
