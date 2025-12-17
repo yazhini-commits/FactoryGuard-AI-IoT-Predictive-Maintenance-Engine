@@ -49,21 +49,21 @@ def merge_features(cleaned_df, rolling_df, lag_df):
 def save_features(df):
     """Serialize merged features using joblib."""
     joblib.dump(df, OUTPUT_FEATURES_PATH)
-    print(f"✅ Features saved at: {OUTPUT_FEATURES_PATH}")
+    print(f" Features saved at: {OUTPUT_FEATURES_PATH}")
 
 
 def run_feature_pipeline():
     """Execute full feature integration pipeline."""
-    print("🚀 Loading datasets...")
+    print(" Loading datasets...")
     cleaned_df, rolling_df, lag_df = load_datasets()
 
     print("🔗 Merging features...")
     final_features = merge_features(cleaned_df, rolling_df, lag_df)
 
-    print("💾 Serializing features...")
+    print(" Serializing features...")
     save_features(final_features)
 
-    print("🎯 Feature engineering pipeline completed!")
+    print(" Feature engineering pipeline completed!")
 
 
 if __name__ == "__main__":
