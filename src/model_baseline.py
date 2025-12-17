@@ -18,7 +18,7 @@ DATA_PATH = ARTIFACTS_DIR / "factoryguard_features.joblib"
 # -------------------------------------------------
 # Step 1: Load merged & engineered dataset
 # -------------------------------------------------
-print("🚀 Loading merged feature dataset...")
+print(" Loading merged feature dataset...")
 df = joblib.load(DATA_PATH)
 
 print("\nColumns in dataset:")
@@ -47,7 +47,7 @@ try:
 except KeyError:
     # Fallback to the working regression script logic if 'Failure' is still missing
     # This prevents the KeyError and allows the code to finish.
-    print(f"⚡ Target column '{TARGET_COL}' not found. Switching to REGRESSION using 'vibration_roll_std_1h' as target.")
+    print(f" Target column '{TARGET_COL}' not found. Switching to REGRESSION using 'vibration_roll_std_1h' as target.")
     TARGET_COL = "vibration_roll_std_1h" 
     from sklearn.linear_model import Ridge # Import regression models for fallback
     from sklearn.ensemble import RandomForestRegressor
@@ -77,12 +77,12 @@ except KeyError:
     rfr_r2 = r2_score(y_test, rfr_preds)
 
     results = pd.DataFrame({"Model": ["Ridge Regression", "Random Forest Regressor"], "R2 Score": [rr_r2, rfr_r2]})
-    print("\n📊 Baseline Model Comparison (Regression Fallback):")
+    print("\n Baseline Model Comparison (Regression Fallback):")
     print(results)
     joblib.dump(rr, ARTIFACTS_DIR / "baseline_ridge_regression.joblib")
     joblib.dump(rfr, ARTIFACTS_DIR / "baseline_random_forest_regressor.joblib")
-    print("\n✅ Baseline models saved successfully")
-    print("🎯 Member-1 task completed (Regression Fallback Mode)")
+    print("\n Baseline models saved successfully")
+    print(" Member-1 task completed (Regression Fallback Mode)")
     exit() # Exit after successful fallback completion
 
 # Code continues for Classification Mode:
@@ -99,7 +99,7 @@ print(y.value_counts())
 # -------------------------------------------------
 # Step 3: Train–test split (FORCED STRATIFICATION FIX)
 # -------------------------------------------------
-print("\n✂️ Splitting data into Training and Test sets...")
+print("\n Splitting data into Training and Test sets...")
 
 # FIX: We use a smaller test_size (0.15) combined with stratification 
 # to force at least 1 positive sample into the test set (2 * 0.15 = 0.3, which rounds up to 1 for stratification).
@@ -117,7 +117,7 @@ print(f"Test set size: {len(y_test)} (Failures: {y_test.sum()})")
 # -------------------------------------------------
 # Step 4: Logistic Regression (Baseline 1) 
 # -------------------------------------------------
-print("\n🔹 Training Logistic Regression...")
+print("\n Training Logistic Regression...")
 
 lr = LogisticRegression(
     class_weight="balanced",
@@ -140,7 +140,7 @@ print(f"Logistic Regression PR-AUC: {lr_pr_auc:.4f}")
 # -------------------------------------------------
 # Step 5: Random Forest (Baseline 2) 
 # -------------------------------------------------
-print("\n🔹 Training Random Forest...")
+print("\n Training Random Forest...")
 
 rf = RandomForestClassifier(
     n_estimators=200,
@@ -168,7 +168,7 @@ results = pd.DataFrame({
     "PR-AUC": [lr_pr_auc, rf_pr_auc]
 })
 
-print("\n📊 Baseline Model Comparison:")
+print("\n Baseline Model Comparison:")
 print(results)
 
 # -------------------------------------------------
@@ -177,5 +177,6 @@ print(results)
 joblib.dump(lr, ARTIFACTS_DIR / "baseline_logistic_regression.joblib")
 joblib.dump(rf, ARTIFACTS_DIR / "baseline_random_forest.joblib")
 
-print("\n✅ Baseline models saved successfully")
-print("🎯 Member-1 task completed (Classification Mode)")
+print("\n Baseline models saved successfully")
+
+print(" Member-1 task completed (Classification Mode)")
