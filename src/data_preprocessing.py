@@ -1,25 +1,21 @@
 import pandas as pd
+from pathlib import Path
 
+# Get project root directory
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 def preprocess_data(input_path, output_path):
-    # Load raw data
     df = pd.read_csv(input_path)
 
-    # Convert timestamp to datetime
     df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-    # Sort by machine and time
     df = df.sort_values(by=['machine_id', 'timestamp'])
 
-    # Handle missing values
     df = df.groupby('machine_id').apply(
-        lambda group: group.fillna(method='ffill')
+        lambda group: group.ffill()
     ).reset_index(drop=True)
 
-    # Save cleaned data
     df.to_csv(output_path, index=False)
 
-    # Validation logs
     print("Preprocessing completed successfully")
     print("Shape:", df.shape)
     print("Machines:", df['machine_id'].nunique())
@@ -27,7 +23,7 @@ def preprocess_data(input_path, output_path):
 
 
 if __name__ == "__main__":
-    preprocess_data(
-        input_path="data/raw/sensor_data.csv",
-        output_path="data/processed/cleaned_data.csv"
-    )
+    input_path = BASE_DIR / "data" / "raw" / "sensor_data.csv"
+    output_path = BASE_DIR / "data" / "processed" / "cleaned_data.csv"
+
+    preprocess_data(input_path, output_path)
