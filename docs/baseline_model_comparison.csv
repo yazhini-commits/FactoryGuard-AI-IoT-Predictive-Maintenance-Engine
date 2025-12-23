@@ -1,3 +1,9 @@
+<<<<<<< HEAD
 Model,R2 Score
 Ridge Regression,1.0
 Random Forest Regressor,1.0
+=======
+Model,R2 Score
+Ridge Regression,1.0
+Random Forest Regressor,1.0
+>>>>>>> 60ddf326d49933a04e6c2f0f7d5f2477d5d38379
