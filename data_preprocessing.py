@@ -26,4 +26,4 @@ if __name__ == "__main__":
     input_path = BASE_DIR / "data" / "raw" / "sensor_data.csv"
     output_path = BASE_DIR / "data" / "processed" / "cleaned_data.csv"
 
-    preprocess_data(input_path, output_path)
+    preprocess_data(input_path, output_path) 
