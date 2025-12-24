@@ -96,7 +96,7 @@ xgb_study.optimize(xgb_objective, n_trials=50)
 xgb_best_score = xgb_study.best_value
 xgb_best_params = xgb_study.best_params
 
-print("✅ XGBoost AUC:", xgb_best_score)
+print(" XGBoost AUC:", xgb_best_score)
 
 # ------------------------------
 # 5. LightGBM + Optuna (CLASSIFICATION)
@@ -127,7 +127,7 @@ lgb_study.optimize(lgb_objective, n_trials=50)
 lgb_best_score = lgb_study.best_value
 lgb_best_params = lgb_study.best_params
 
-print("✅ LightGBM AUC:", lgb_best_score)
+print(" LightGBM AUC:", lgb_best_score)
 
 # ------------------------------
 # 6. Select best model
