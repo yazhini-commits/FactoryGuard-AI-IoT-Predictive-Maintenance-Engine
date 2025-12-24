@@ -128,7 +128,7 @@ def run_feature_pipeline():
 
     merged_df = merge_features(cleaned_df, rolling_df, lag_df)
 
-    # 👇 IMPORTANT: View rows here
+    #  IMPORTANT: View rows here
     inspect_rows(merged_df)
 
     save_features(merged_df)
@@ -142,3 +142,4 @@ def run_feature_pipeline():
 # -------------------------------------------------
 if __name__ == "__main__":
     run_feature_pipeline()
+
