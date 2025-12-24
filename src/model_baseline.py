@@ -27,7 +27,7 @@ print(df.columns.tolist())
 # -------------------------------------------------
 # Step 2: Define target and features
 # -------------------------------------------------
-TARGET_COL = "failure"   # ✅ FIXED (lowercase)
+TARGET_COL = "failure"   #  FIXED (lowercase)
 
 COLUMNS_TO_DROP = [
     TARGET_COL,
@@ -124,4 +124,5 @@ joblib.dump(lr, ARTIFACTS_DIR / "baseline_logistic_regression.joblib")
 joblib.dump(rf, ARTIFACTS_DIR / "baseline_random_forest.joblib")
 
 print("\nBaseline models saved successfully")
-print("Member-1 task completed ✅")
+
+
