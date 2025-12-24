@@ -20,7 +20,6 @@ from sklearn.metrics import (
 # =========================
 DATASET_PATH = "artifacts/factoryguard_features.joblib"
 MODEL_PATH = "artifacts/final_production_model.joblib"
-FEATURE_NAMES_PATH = "artifacts/feature_names.joblib"
 PLOT_PATH = "evaluation/plots/pr_curve.png"
 
 
@@ -31,19 +30,30 @@ def load_data_and_model():
     # Load dataset
     df = joblib.load(DATASET_PATH)
 
-    # Load feature names used during training
-    feature_names = joblib.load(FEATURE_NAMES_PATH)
+    # -------------------------
+    # TARGET
+    # -------------------------
+    if "failure" not in df.columns:
+        raise ValueError("Target column 'failure' not found in dataset")
 
-    # Target
     y = df["failure"]
 
-    # Align features EXACTLY as training
+    # -------------------------
+    # FEATURE SELECTION (FIXED)
+    # -------------------------
+    # Remove non-feature columns
+    DROP_COLS = ["failure", "machine_id", "timestamp"]
+
+    feature_names = [c for c in df.columns if c not in DROP_COLS]
+
     X = df[feature_names]
 
-    # Safety: enforce numeric
+    # Ensure numeric features only
     X = X.apply(pd.to_numeric, errors="coerce").fillna(0)
 
-    # Train-test split
+    # -------------------------
+    # TRAIN-TEST SPLIT
+    # -------------------------
     _, X_test, _, y_test = train_test_split(
         X,
         y,
@@ -62,9 +72,6 @@ def load_data_and_model():
 # PR-AUC COMPUTATION
 # =========================
 def compute_pr_auc(model, X_test, y_test):
-    """
-    Compute PR-AUC using predicted probabilities.
-    """
     y_score = model.predict_proba(X_test)[:, 1]
     pr_auc = average_precision_score(y_test, y_score)
     return pr_auc, y_score
@@ -132,4 +139,3 @@ if __name__ == "__main__":
     print(f"Precision @Thresh  : {best_precision:.4f}")
     print(f"Recall @Thresh     : {best_recall:.4f}")
     print(f"PR Curve Plot saved to: {PLOT_PATH}")
-
