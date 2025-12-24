@@ -1,11 +1,10 @@
 import pandas as pd
 from pathlib import Path
 
-# Get project root directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 def preprocess_data(input_path, output_path):
-    df = pd.read_csv(input_path, sep="\t")
+    df = pd.read_csv(input_path, sep=",")
 
     df['timestamp'] = pd.to_datetime(df['timestamp'])
     df = df.sort_values(by=['machine_id', 'timestamp'])
