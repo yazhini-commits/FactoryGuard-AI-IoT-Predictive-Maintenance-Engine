@@ -7,12 +7,16 @@ from sklearn.metrics import average_precision_score, precision_score
 
 from imblearn.over_sampling import SMOTE
 
+from pathlib import Path
 
-DATA_PATH = "data/processed/final_features.csv"
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_PATH = BASE_DIR / "data" / "processed" / "final_features.csv"
 
 df = pd.read_csv(DATA_PATH)
 
-X = df.drop(columns=["failure"])
+
+X = df.drop(columns=["failure", "machine_id", "timestamp"])
+
 y = df["failure"]
 
 print("\nClass Distribution:")
@@ -47,7 +51,8 @@ print("PR-AUC     :", round(pr_auc_cw, 4))
 print("Precision  :", round(precision_cw, 4))
 
 
-smote = SMOTE(random_state=42)
+smote = SMOTE(random_state=42, k_neighbors=1)
+
 
 X_sm, y_sm = smote.fit_resample(X_train, y_train)
 
