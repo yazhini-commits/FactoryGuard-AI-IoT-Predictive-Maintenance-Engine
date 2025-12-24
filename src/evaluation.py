@@ -1,11 +1,10 @@
 import os
+import joblib
+import numpy as np
+import pandas as pd
 
 import matplotlib
 matplotlib.use("Agg")
-import pandas as pd
-
-import joblib
-import numpy as np
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
@@ -21,6 +20,7 @@ from sklearn.metrics import (
 # =========================
 DATASET_PATH = "artifacts/factoryguard_features.joblib"
 MODEL_PATH = "artifacts/final_production_model.joblib"
+FEATURE_NAMES_PATH = "artifacts/feature_names.joblib"
 PLOT_PATH = "evaluation/plots/pr_curve.png"
 
 
@@ -28,21 +28,20 @@ PLOT_PATH = "evaluation/plots/pr_curve.png"
 # LOAD DATA & MODEL
 # =========================
 def load_data_and_model():
-    import pandas as pd
-
     # Load dataset
     df = joblib.load(DATASET_PATH)
 
-    # Create synthetic binary failure label (for evaluation only)
-    y = (df["vibration"] > 5.0).astype(int)
+    # Load feature names used during training
+    feature_names = joblib.load(FEATURE_NAMES_PATH)
 
+    # Target
+    y = df["failure"]
 
-    # Use all features EXCEPT the target proxy
-    X = df.drop(columns=["vibration"])
+    # Align features EXACTLY as training
+    X = df[feature_names]
 
-    # Ensure all features are numeric
-    X = X.apply(pd.to_numeric, errors="coerce")
-    X = X.fillna(0)
+    # Safety: enforce numeric
+    X = X.apply(pd.to_numeric, errors="coerce").fillna(0)
 
     # Train-test split
     _, X_test, _, y_test = train_test_split(
@@ -64,9 +63,9 @@ def load_data_and_model():
 # =========================
 def compute_pr_auc(model, X_test, y_test):
     """
-    Compute PR-AUC using regression outputs as risk scores.
+    Compute PR-AUC using predicted probabilities.
     """
-    y_score = model.predict(X_test)
+    y_score = model.predict_proba(X_test)[:, 1]
     pr_auc = average_precision_score(y_test, y_score)
     return pr_auc, y_score
 
@@ -75,13 +74,12 @@ def compute_pr_auc(model, X_test, y_test):
 # PR CURVE PLOT
 # =========================
 def plot_pr_curve(y_test, y_score):
-    # Create directory if it does not exist
     os.makedirs(os.path.dirname(PLOT_PATH), exist_ok=True)
 
     precision, recall, _ = precision_recall_curve(y_test, y_score)
 
     plt.figure(figsize=(8, 6))
-    plt.plot(recall, precision)
+    plt.plot(recall, precision, linewidth=2)
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.title("Precision–Recall Curve")
@@ -89,7 +87,6 @@ def plot_pr_curve(y_test, y_score):
     plt.tight_layout()
     plt.savefig(PLOT_PATH)
     plt.close()
-
 
 
 # =========================
@@ -135,3 +132,4 @@ if __name__ == "__main__":
     print(f"Precision @Thresh  : {best_precision:.4f}")
     print(f"Recall @Thresh     : {best_recall:.4f}")
     print(f"PR Curve Plot saved to: {PLOT_PATH}")
+
