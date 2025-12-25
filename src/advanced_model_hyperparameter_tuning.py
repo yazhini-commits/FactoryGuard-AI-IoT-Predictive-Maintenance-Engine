@@ -6,7 +6,7 @@ import optuna
 import xgboost as xgb
 import lightgbm as lgb
 from sklearn.model_selection import StratifiedKFold
-from sklearn.metrics import average_precision_score
+from sklearn.metrics import average_precision_score, classification_report
 import warnings
 
 warnings.filterwarnings("ignore")
@@ -26,40 +26,35 @@ TARGET_COLUMN = "failure"
 features = joblib.load(FEATURE_PATH)
 features.columns = features.columns.str.strip().str.lower()
 
-# Drop irrelevant columns
-drop_cols = ['timestamp', 'machine_id']
+drop_cols = ["timestamp", "machine_id"]
 features = features.drop(columns=[c for c in drop_cols if c in features.columns])
-
-# Drop missing target rows
 features = features.dropna(subset=[TARGET_COLUMN])
 
-# Features and target
 X = features.drop(TARGET_COLUMN, axis=1)
-y = pd.to_numeric(features[TARGET_COLUMN], errors='coerce')
+y = pd.to_numeric(features[TARGET_COLUMN], errors="coerce")
 mask = y.notna()
 X = X[mask]
 y = y[mask].astype(int)
 
-# Convert object columns to numeric
-for col in X.select_dtypes(include=['object']).columns:
-    X[col] = pd.to_numeric(X[col], errors='coerce')
+for col in X.select_dtypes(include=["object"]).columns:
+    X[col] = pd.to_numeric(X[col], errors="coerce")
 
-# Impute missing values with median
 X = X.fillna(X.median())
 
 # ------------------------------
-# Compute scale_pos_weight for XGBoost
+# Class imbalance handling
 # ------------------------------
 scale_pos_weight = (len(y) - y.sum()) / max(y.sum(), 1)
+lgb_class_weight = {0: 1, 1: int((y == 0).sum() / max((y == 1).sum(), 1))}
 print(f"scale_pos_weight: {scale_pos_weight:.2f}")
 
 # ------------------------------
-# Stratified K-Fold cross-validation
+# Cross-validation
 # ------------------------------
 kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
 # ------------------------------
-# XGBoost objective for Optuna
+# XGBoost Optuna objective
 # ------------------------------
 def xgb_objective(trial):
     params = {
@@ -77,32 +72,29 @@ def xgb_objective(trial):
         "random_state": 42,
         "n_jobs": -1
     }
+
     scores = []
-    for train_idx, val_idx in kf.split(X, y):
-        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-
-        if y_val.sum() == 0:
-            continue
-
+    for tr, va in kf.split(X, y):
         model = xgb.XGBClassifier(**params)
         model.fit(
-            X_train, y_train,
-            eval_set=[(X_val, y_val)],
-            eval_metric='logloss',  # safe for rare positives
+            X.iloc[tr],
+            y.iloc[tr],
+            eval_set=[(X.iloc[va], y.iloc[va])],
+            eval_metric="logloss",
             early_stopping_rounds=50,
             verbose=False
         )
-        preds = model.predict_proba(X_val)[:, 1]
-        scores.append(average_precision_score(y_val, preds))
-    return np.mean(scores) if scores else 0.0
+        preds = model.predict_proba(X.iloc[va])[:, 1]
+        scores.append(average_precision_score(y.iloc[va], preds))
+
+    return np.mean(scores)
 
 # ------------------------------
-# LightGBM objective for Optuna
+# LightGBM Optuna objective
 # ------------------------------
 def lgb_objective(trial):
     max_depth = trial.suggest_int("max_depth", 4, 8)
-    num_leaves = 2 ** max_depth - 1  # avoid LightGBM leaf warnings
+    num_leaves = 2 ** max_depth - 1
 
     params = {
         "objective": "binary",
@@ -117,74 +109,92 @@ def lgb_objective(trial):
         "reg_lambda": trial.suggest_float("reg_lambda", 1, 10),
         "random_state": 42,
         "n_jobs": -1,
-        "min_child_samples": 20,
-        "min_split_gain": 0.0,
         "verbose": -1
     }
 
-    # Compute class weights for imbalance
-    weights = {0:1, 1:int((y==0).sum()/max((y==1).sum(),1))}
-    
     scores = []
-    for train_idx, val_idx in kf.split(X, y):
-        X_train, X_val = X.iloc[train_idx], X.iloc[val_idx]
-        y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
-
-        if y_val.sum() == 0:
-            continue
-
-        model = lgb.LGBMClassifier(**params, class_weight=weights)
+    for tr, va in kf.split(X, y):
+        model = lgb.LGBMClassifier(**params, class_weight=lgb_class_weight)
         model.fit(
-            X_train, y_train,
-            eval_set=[(X_val, y_val)],
-            eval_metric='average_precision',
-            callbacks=[lgb.early_stopping(stopping_rounds=50)]
+            X.iloc[tr],
+            y.iloc[tr],
+            eval_set=[(X.iloc[va], y.iloc[va])],
+            callbacks=[lgb.early_stopping(50)]
         )
+        preds = model.predict_proba(X.iloc[va])[:, 1]
+        scores.append(average_precision_score(y.iloc[va], preds))
 
-        preds = model.predict_proba(X_val)[:, 1]
-        scores.append(average_precision_score(y_val, preds))
-
-    return np.mean(scores) if scores else 0.0
+    return np.mean(scores)
 
 # ------------------------------
-# Run Optuna studies
+# Run Optuna
 # ------------------------------
 xgb_study = optuna.create_study(direction="maximize")
 xgb_study.optimize(xgb_objective, n_trials=100)
-xgb_best_score = xgb_study.best_value
-xgb_best_params = xgb_study.best_params
 
 lgb_study = optuna.create_study(direction="maximize")
 lgb_study.optimize(lgb_objective, n_trials=100)
+
+xgb_best_score = xgb_study.best_value
 lgb_best_score = lgb_study.best_value
+
+xgb_best_params = xgb_study.best_params
 lgb_best_params = lgb_study.best_params
 
 # ------------------------------
-# Select final model
+# Train BOTH best models
+# ------------------------------
+xgb_final = xgb.XGBClassifier(
+    **xgb_best_params,
+    scale_pos_weight=scale_pos_weight,
+    random_state=42,
+    n_jobs=-1
+)
+xgb_final.fit(X, y)
+
+lgb_final = lgb.LGBMClassifier(
+    **lgb_best_params,
+    class_weight=lgb_class_weight,
+    random_state=42,
+    verbose=-1
+)
+lgb_final.fit(X, y)
+
+# ------------------------------
+# Separate classification reports
+# ------------------------------
+xgb_pred = xgb_final.predict(X)
+lgb_pred = lgb_final.predict(X)
+
+xgb_report_dict = classification_report(
+    y, xgb_pred, target_names=["No Failure", "Failure"], output_dict=True
+)
+lgb_report_dict = classification_report(
+    y, lgb_pred, target_names=["No Failure", "Failure"], output_dict=True
+)
+
+xgb_report_text = classification_report(
+    y, xgb_pred, target_names=["No Failure", "Failure"]
+)
+lgb_report_text = classification_report(
+    y, lgb_pred, target_names=["No Failure", "Failure"]
+)
+
+# ------------------------------
+# Select final production model
 # ------------------------------
 if lgb_best_score > xgb_best_score:
-    final_model = lgb.LGBMClassifier(
-        **lgb_best_params,
-        random_state=42,
-        class_weight={0:1, 1:int((y==0).sum()/max((y==1).sum(),1))},
-        verbose=-1
-    )
+    final_model = lgb_final
     final_model_name = "LightGBM"
     final_score = lgb_best_score
 else:
-    final_model = xgb.XGBClassifier(
-        **xgb_best_params,
-        random_state=42,
-        scale_pos_weight=scale_pos_weight,
-        n_jobs=-1
-    )
+    final_model = xgb_final
     final_model_name = "XGBoost"
     final_score = xgb_best_score
 
-# Fit final model on full dataset
-final_model.fit(X, y)
-
-# Save model and report
+# ------------------------------
+# Save artifacts
+# ------------------------------
 joblib.dump(final_model, OUTPUT_MODEL_PATH)
 
 report = {
@@ -192,20 +202,29 @@ report = {
     "target_column": TARGET_COLUMN,
     "selected_model": final_model_name,
     "final_pr_auc": final_score,
-    "xgboost_pr_auc": xgb_best_score,
-    "xgboost_best_params": xgb_best_params,
-    "lightgbm_pr_auc": lgb_best_score,
-    "lightgbm_best_params": lgb_best_params
+    "xgboost": {
+        "pr_auc": xgb_best_score,
+        "best_params": xgb_best_params,
+        "classification_report": xgb_report_dict
+    },
+    "lightgbm": {
+        "pr_auc": lgb_best_score,
+        "best_params": lgb_best_params,
+        "classification_report": lgb_report_dict
+    }
 }
 
 joblib.dump(report, OUTPUT_REPORT_PATH)
 
 # ------------------------------
-# Final report
+# Console output
 # ------------------------------
-print("\n===== FINAL PRODUCTION MODEL REPORT =====")
-print(f"Selected Model       : {final_model_name}")
+print("\n===== XGBOOST CLASSIFICATION REPORT =====")
+print(xgb_report_text)
+
+print("\n===== LIGHTGBM CLASSIFICATION REPORT =====")
+print(lgb_report_text)
+
+print("\n===== FINAL MODEL SELECTION =====")
+print(f"Selected Model        : {final_model_name}")
 print(f"Cross-validated PR-AUC: {final_score:.6f}")
-print(f"XGBoost PR-AUC       : {xgb_best_score:.6f}")
-print(f"LightGBM PR-AUC      : {lgb_best_score:.6f}")
-print("========================================")
