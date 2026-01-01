@@ -1,0 +1,6 @@
+feature,mean_absolute_shap
+failure_lag,1.0070829858009323
+pressure,0.8189802047838167
+pressure_lag,0.6200155718512227
+vibration,0.565650539888778
+temperature,0.31667582900445373
