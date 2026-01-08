@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FactoryGuard | Home</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 40px 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 12px 25px rgba(0,0,0,0.2);
+            animation: fadeIn 0.8s ease-in-out;
+            max-width: 400px;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 36px;
+        }
+
+        h3 {
+            margin: 0 0 25px 0;
+            font-weight: normal;
+            font-size: 18px;
+        }
+
+        button {
+            padding: 14px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #ffffff;
+            color: #1e3c72;
+            transition: 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #e0e0e0;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 480px) {
+            .box {
+                padding: 30px 20px;
+            }
+            h1 { font-size: 28px; }
+            h3 { font-size: 16px; }
+            button { font-size: 16px; padding: 12px 25px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="box">
+    <h1>🏭 FactoryGuard</h1>
+    <h3>Predictive Maintenance System</h3>
+    <button onclick="location.href='/dashboard'">
+        Open Dashboard
+    </button>
+</div>
+
+</body>
+</html>
